@@ -1,0 +1,30 @@
+pipeline {
+    agent { label 'dev-agent' }
+    
+    stages{
+        stage('Code'){
+            steps{
+                git url: 'https://github.com/gsbarure/node-todo-cicd.git', branch: 'master' 
+            }
+        }
+        stage('Build and Test'){
+            steps{
+                sh 'docker build . -t gajananbarure/node-todo-app-cicd:latest'
+            }
+        }
+        stage('Login and Push Image'){
+            steps {
+                echo 'login in docker hub and pushing'
+                withCredentials([usernamePassword(credentialsId:'dockerhub', passwordVariable:'dockerhubpassword', usernameVariable:'dockerhubuser')]) {
+        	     sh "docker login -u ${env.dockerhubuser} -p ${env.dockerhubPassword}"
+                 sh 'docker push gajananbarure/node-todo-app-cicd:latest'
+                }
+            }
+        }
+        stage('Deploy'){
+            steps{
+                sh "docker-compose down && docker-compose up -d"
+            }
+        }
+}
+    }
